@@ -1,0 +1,37 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .NET
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: grape city licene manager install
+      run: dotnet tool install -g GrapeCity.LicenseManagerTool
+    - name: gclm setting
+      env:
+        LICENSE_KEY: ${{ secrets.COMPONENTONEKEY }}
+      run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -a "$env:LICENSE_KEY"
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+    - name: clean up
+      if: ${{ always() }}
+      run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -d
