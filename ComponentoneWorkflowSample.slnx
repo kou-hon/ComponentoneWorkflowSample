@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="HogeLib/HogeLib.csproj" />
+  <Project Path="TestProject1/TestProject1.csproj" />
+  <Project Path="WPFApp/WPFApp.csproj" />
+</Solution>
