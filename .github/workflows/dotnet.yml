@@ -23,7 +23,7 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # 取得対象artifact名
-        $artifactName = "last_run_date"
+        $artifactName = "last_run_date2"
         $repo = "${{ github.repository }}"
 
         # アーティファクト一覧を取得
