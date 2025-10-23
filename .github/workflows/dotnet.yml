@@ -95,5 +95,38 @@ jobs:
 
     - name: gclm setting
       if: env.skip == 'false'
-     ](#)
-
+      env:
+        LICENSE_KEY: ${{ secrets.COMPONENTONEKEY }}
+      run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -a "$env:LICENSE_KEY"
+
+    - name: Restore dependencies
+      if: env.skip == 'false'
+      run: dotnet restore
+
+    - name: Build
+      if: env.skip == 'false'
+      run: dotnet build --no-restore
+
+    - name: Test
+      if: env.skip == 'false'
+      run: dotnet test --no-build --verbosity normal
+
+    # 5. 今日の日付をartifactとして保存
+    - name: Save today's date as artifact
+      if: env.skip == 'false'
+      shell: pwsh
+      run: |
+        $env:date | Out-File -Encoding UTF8 -NoNewline last_run_date.txt
+
+    - name: Upload last_run_date artifact
+      if: env.skip == 'false'
+      uses: actions/upload-artifact@v4
+      with:
+        name: last_run_date
+        path: last_run_date.txt
+        retention-days: 3
+
+    # 6. クリーンアップ
+    - name: Clean up
+      if: always()
+      run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -d
