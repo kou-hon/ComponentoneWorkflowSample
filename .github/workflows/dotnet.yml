@@ -78,14 +78,6 @@ jobs:
           Write-Host "Not run today. Proceeding with build."
         }
 
-    # 必ず失敗させたい
-    - name: Always fail
-      shell: pwsh
-      if: env.skip == 'false'
-      run: |
-        Write-Host "This step will always fail."
-        exit 1
-
     # 4. ワークフロー本体
     - name: Checkout
       if: env.skip == 'false'
