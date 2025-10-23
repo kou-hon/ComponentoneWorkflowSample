@@ -15,23 +15,61 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    # 1. 前回実行日をartifactから取得
+    - name: Download last_run_date artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: last_run_date
+      continue-on-error: true
+
+    # 2. 今日の日付取得
+    - name: Get today's date
+      id: get_date
+      run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+    # 3. 前回実行日と比較
+    - name: Compare dates
+      id: compare
+      run: |
+        LAST_RUN_DATE=$(cat last_run_date.txt 2>/dev/null || echo "")
+        if [ "$LAST_RUN_DATE" = "$date" ]; then
+          echo "skip=true" >> $GITHUB_ENV
+        else
+          echo "skip=false" >> $GITHUB_ENV
+        fi
+
+    - name: checkout
+      if: env.skip == 'false'
+      uses: actions/checkout@v4
+
     - name: Setup .NET
+      if: env.skip == 'false'
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+
     - name: grape city licene manager install
+      if: env.skip == 'false'
       run: dotnet tool install -g GrapeCity.LicenseManagerTool
+
     - name: gclm setting
       env:
         LICENSE_KEY: ${{ secrets.COMPONENTONEKEY }}
+      if: env.skip == 'false'
       run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -a "$env:LICENSE_KEY"
+
     - name: Restore dependencies
+      if: env.skip == 'false'
       run: dotnet restore
+
     - name: Build
+      if: env.skip == 'false'
       run: dotnet build --no-restore
+
     - name: Test
+      if: env.skip == 'false'
       run: dotnet test --no-build --verbosity normal
+
     - name: clean up
       if: ${{ always() }}
       run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -d
