@@ -71,17 +71,17 @@ jobs:
       if: env.skip == 'false'
       run: dotnet test --no-build --verbosity normal
 
-      # 5. 日付ファイルをartifactとして保存
-      - name: Save today's date as artifact
-        if: env.skip == 'false'
-        run: echo "$date" > last_run_date.txt
+    # 5. 日付ファイルをartifactとして保存
+    - name: Save today's date as artifact
+      if: env.skip == 'false'
+      run: echo "$date" > last_run_date.txt
 
-      - name: Upload last_run_date artifact
-        if: env.skip == 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: last_run_date
-          path: last_run_date.txt
+    - name: Upload last_run_date artifact
+      if: env.skip == 'false'
+      uses: actions/upload-artifact@v4
+      with:
+        name: last_run_date
+        path: last_run_date.txt
 
     - name: clean up
       if: ${{ always() }}
