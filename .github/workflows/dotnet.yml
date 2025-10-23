@@ -1,6 +1,3 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
 name: .NET
 
 on:
@@ -11,18 +8,44 @@ on:
 
 jobs:
   build:
-
     runs-on: windows-latest
 
-    steps:
-    # 1. 前回実行日をartifactから取得
-    - name: Download last_run_date artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: last_run_date
-      continue-on-error: true
+    permissions:
+      actions: read
+      contents: read
 
-    # 2. 今日の日付取得
+    steps:
+    # 1. 前回実行のartifactを検索してダウンロード
+    - name: Download last_run_date artifact from previous workflow
+      id: download_artifact
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # 取得対象artifact名
+        $artifactName = "last_run_date"
+        $repo = "${{ github.repository }}"
+
+        # アーティファクト一覧を取得
+        $artifacts = gh api "repos/$repo/actions/artifacts" --paginate | ConvertFrom-Json
+
+        # 一致するartifactを探す
+        $target = $artifacts.artifacts | Where-Object { $_.name -eq $artifactName } | Sort-Object created_at -Descending | Select-Object -First 1
+
+        if ($null -ne $target) {
+          Write-Host "Found artifact: $($target.name)"
+          $artifactId = $target.id
+
+          # zipをダウンロードして展開
+          gh api "repos/$repo/actions/artifacts/$artifactId/zip" --output artifact.zip
+          Expand-Archive artifact.zip -DestinationPath .
+          Write-Host "Artifact downloaded and extracted."
+        }
+        else {
+          Write-Host "No previous artifact found."
+        }
+
+    # 2. 今日の日付を取得
     - name: Get today's date
       id: get_date
       shell: pwsh
@@ -37,17 +60,22 @@ jobs:
       run: |
         if (Test-Path .\last_run_date.txt) {
           $LAST_RUN_DATE = Get-Content .\last_run_date.txt
+          Write-Host "Last run date: $LAST_RUN_DATE"
         } else {
           $LAST_RUN_DATE = ""
-        }
-        if ($LAST_RUN_DATE -eq $env:date) {
-          echo "skip=true" >> $env:GITHUB_ENV
-        } else {
-          echo "skip=false" >> $env:GITHUB_ENV
+          Write-Host "No last_run_date.txt found."
         }
 
-    # 4. ワークフローの本体
-    - name: checkout
+        if ($LAST_RUN_DATE -eq $env:date) {
+          echo "skip=true" >> $env:GITHUB_ENV
+          Write-Host "Already run today. Skipping build."
+        } else {
+          echo "skip=false" >> $env:GITHUB_ENV
+          Write-Host "Not run today. Proceeding with build."
+        }
+
+    # 4. ワークフロー本体
+    - name: Checkout
       if: env.skip == 'false'
       uses: actions/checkout@v4
 
@@ -57,14 +85,14 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    - name: grape city licene manager install
+    - name: Install GrapeCity License Manager
       if: env.skip == 'false'
       run: dotnet tool install -g GrapeCity.LicenseManagerTool
 
     - name: gclm setting
+      if: env.skip == 'false'
       env:
         LICENSE_KEY: ${{ secrets.COMPONENTONEKEY }}
-      if: env.skip == 'false'
       run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -a "$env:LICENSE_KEY"
 
     - name: Restore dependencies
@@ -79,7 +107,7 @@ jobs:
       if: env.skip == 'false'
       run: dotnet test --no-build --verbosity normal
 
-    # 5. 日付ファイルをartifactとして保存
+    # 5. 今日の日付をartifactとして保存
     - name: Save today's date as artifact
       if: env.skip == 'false'
       shell: pwsh
@@ -92,7 +120,9 @@ jobs:
       with:
         name: last_run_date
         path: last_run_date.txt
+        retention-days: 3
 
-    - name: clean up
-      if: ${{ always() }}
+    # 6. クリーンアップ
+    - name: Clean up
+      if: always()
       run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -d
