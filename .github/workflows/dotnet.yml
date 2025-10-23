@@ -15,30 +15,38 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    # 1. ‘O‰ñŽÀs“ú‚ðartifact‚©‚çŽæ“¾
+    # 1. å‰å›žå®Ÿè¡Œæ—¥ã‚’artifactã‹ã‚‰å–å¾—
     - name: Download last_run_date artifact
       uses: actions/download-artifact@v4
       with:
         name: last_run_date
       continue-on-error: true
 
-    # 2. ¡“ú‚Ì“ú•tŽæ“¾
+    # 2. ä»Šæ—¥ã®æ—¥ä»˜å–å¾—
     - name: Get today's date
       id: get_date
-      run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+      shell: pwsh
+      run: |
+        $date = Get-Date -Format "yyyy-MM-dd"
+        echo "date=$date" >> $env:GITHUB_ENV
 
-    # 3. ‘O‰ñŽÀs“ú‚Æ”äŠr
+    # 3. å‰å›žå®Ÿè¡Œæ—¥ã¨æ¯”è¼ƒ
     - name: Compare dates
       id: compare
+      shell: pwsh
       run: |
-        LAST_RUN_DATE=$(cat last_run_date.txt 2>/dev/null || echo "")
-        if [ "$LAST_RUN_DATE" = "$date" ]; then
-          echo "skip=true" >> $GITHUB_ENV
-        else
-          echo "skip=false" >> $GITHUB_ENV
-        fi
+        if (Test-Path .\last_run_date.txt) {
+          $LAST_RUN_DATE = Get-Content .\last_run_date.txt
+        } else {
+          $LAST_RUN_DATE = ""
+        }
+        if ($LAST_RUN_DATE -eq $env:date) {
+          echo "skip=true" >> $env:GITHUB_ENV
+        } else {
+          echo "skip=false" >> $env:GITHUB_ENV
+        }
 
-    # 4. ƒ[ƒNƒtƒ[‚Ì–{‘Ì
+    # 4. ãƒ¯ãƒ¼ã‚¯ãƒ•ãƒ­ãƒ¼ã®æœ¬ä½“
     - name: checkout
       if: env.skip == 'false'
       uses: actions/checkout@v4
@@ -71,10 +79,12 @@ jobs:
       if: env.skip == 'false'
       run: dotnet test --no-build --verbosity normal
 
-    # 5. “ú•tƒtƒ@ƒCƒ‹‚ðartifact‚Æ‚µ‚Ä•Û‘¶
+    # 5. æ—¥ä»˜ãƒ•ã‚¡ã‚¤ãƒ«ã‚’artifactã¨ã—ã¦ä¿å­˜
     - name: Save today's date as artifact
       if: env.skip == 'false'
-      run: echo "$date" > last_run_date.txt
+      shell: pwsh
+      run: |
+        $env:date | Out-File -Encoding UTF8 -NoNewline last_run_date.txt
 
     - name: Upload last_run_date artifact
       if: env.skip == 'false'
