@@ -23,7 +23,7 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # 取得対象artifact名
-        $artifactName = "last_run_date2"
+        $artifactName = "last_run_date"
         $repo = "${{ github.repository }}"
 
         # アーティファクト一覧を取得
@@ -62,12 +62,12 @@ jobs:
       id: compare
       shell: pwsh
       run: |
-        if (Test-Path .\last_run_date2.txt) {
-          $LAST_RUN_DATE = Get-Content .\last_run_date2.txt
+        if (Test-Path .\last_run_date.txt) {
+          $LAST_RUN_DATE = Get-Content .\last_run_date.txt
           Write-Host "Last run date: $LAST_RUN_DATE"
         } else {
           $LAST_RUN_DATE = ""
-          Write-Host "No last_run_date2.txt found."
+          Write-Host "No last_run_date.txt found."
         }
 
         if ($LAST_RUN_DATE -eq $env:date) {
@@ -116,14 +116,14 @@ jobs:
       if: env.skip == 'false'
       shell: pwsh
       run: |
-        $env:date | Out-File -Encoding UTF8 -NoNewline last_run_date2.txt
+        $env:date | Out-File -Encoding UTF8 -NoNewline last_run_date.txt
 
-    - name: Upload last_run_date2 artifact
+    - name: Upload last_run_date artifact
       if: env.skip == 'false'
       uses: actions/upload-artifact@v4
       with:
-        name: last_run_date2
-        path: last_run_date2.txt
+        name: last_run_date
+        path: last_run_date.txt
         retention-days: 3
 
     # 6. クリーンアップ
