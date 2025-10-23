@@ -62,12 +62,12 @@ jobs:
       id: compare
       shell: pwsh
       run: |
-        if (Test-Path .\last_run_date.txt) {
-          $LAST_RUN_DATE = Get-Content .\last_run_date.txt
+        if (Test-Path .\last_run_date2.txt) {
+          $LAST_RUN_DATE = Get-Content .\last_run_date2.txt
           Write-Host "Last run date: $LAST_RUN_DATE"
         } else {
           $LAST_RUN_DATE = ""
-          Write-Host "No last_run_date.txt found."
+          Write-Host "No last_run_date2.txt found."
         }
 
         if ($LAST_RUN_DATE -eq $env:date) {
@@ -77,6 +77,13 @@ jobs:
           echo "skip=false" >> $env:GITHUB_ENV
           Write-Host "Not run today. Proceeding with build."
         }
+
+    # 必ず失敗させたい
+    - name: Always fail
+      shell: pwsh
+      run: |
+        Write-Host "This step will always fail."
+        exit 1
 
     # 4. ワークフロー本体
     - name: Checkout
@@ -116,14 +123,14 @@ jobs:
       if: env.skip == 'false'
       shell: pwsh
       run: |
-        $env:date | Out-File -Encoding UTF8 -NoNewline last_run_date.txt
+        $env:date | Out-File -Encoding UTF8 -NoNewline last_run_date2.txt
 
-    - name: Upload last_run_date artifact
+    - name: Upload last_run_date2 artifact
       if: env.skip == 'false'
       uses: actions/upload-artifact@v4
       with:
-        name: last_run_date
-        path: last_run_date.txt
+        name: last_run_date2
+        path: last_run_date2.txt
         retention-days: 3
 
     # 6. クリーンアップ
