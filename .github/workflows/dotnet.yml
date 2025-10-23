@@ -81,6 +81,7 @@ jobs:
     # 必ず失敗させたい
     - name: Always fail
       shell: pwsh
+      if: env.skip == 'false'
       run: |
         Write-Host "This step will always fail."
         exit 1
