@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 20
 
     permissions:
       actions: read
@@ -16,14 +17,14 @@ jobs:
 
     steps:
     # 1. 前回実行のartifactを検索してダウンロード
-    - name: Download last_run_date artifact from previous workflow
+    - name: Download last_build_date artifact from previous workflow
       id: download_artifact
       shell: pwsh
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # 取得対象artifact名
-        $artifactName = "last_run_date"
+        $artifactName = "last_build_date"
         $repo = "${{ github.repository }}"
 
         # アーティファクト一覧を取得
@@ -62,12 +63,12 @@ jobs:
       id: compare
       shell: pwsh
       run: |
-        if (Test-Path .\last_run_date.txt) {
-          $LAST_RUN_DATE = Get-Content .\last_run_date.txt
+        if (Test-Path .\last_build_date.txt) {
+          $LAST_RUN_DATE = Get-Content .\last_build_date.txt
           Write-Host "Last run date: $LAST_RUN_DATE"
         } else {
           $LAST_RUN_DATE = ""
-          Write-Host "No last_run_date.txt found."
+          Write-Host "No last_build_date.txt found."
         }
 
         if ($LAST_RUN_DATE -eq $env:date) {
@@ -89,7 +90,7 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    - name: Install GrapeCity License Manager
+    - name: Download grape city gclm_deploy.exe
       if: env.skip == 'false'
       run: dotnet tool install -g GrapeCity.LicenseManagerTool
 
@@ -97,7 +98,8 @@ jobs:
       if: env.skip == 'false'
       env:
         LICENSE_KEY: ${{ secrets.COMPONENTONEKEY }}
-      run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -a "$env:LICENSE_KEY"
+      run: |
+        pwsh -File .github/scripts/activate-license.ps1
 
     - name: Restore dependencies
       if: env.skip == 'false'
@@ -116,17 +118,17 @@ jobs:
       if: env.skip == 'false'
       shell: pwsh
       run: |
-        $env:date | Out-File -Encoding UTF8 -NoNewline last_run_date.txt
+        $env:date | Out-File -Encoding UTF8 -NoNewline last_build_date.txt
 
-    - name: Upload last_run_date artifact
+    - name: Upload last_build_date artifact
       if: env.skip == 'false'
       uses: actions/upload-artifact@v4
       with:
-        name: last_run_date
-        path: last_run_date.txt
+        name: last_build_date
+        path: last_build_date.txt
         retention-days: 3
 
     # 6. クリーンアップ
-    - name: Clean up
+    - name: clean up
       if: always() && env.skip != 'true'
       run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -d
