@@ -92,8 +92,20 @@ jobs:
 
     - name: Download grape city gclm_deploy.exe
       if: env.skip == 'false'
-      run: dotnet tool install -g GrapeCity.LicenseManagerTool
+      run: |
+        curl -o gclm_deploy.exe https://cdn.mescius.com/license/gclm_deploy.exe
 
+    - name: grape city licene manager install
+      if: env.skip == 'false'
+      run: |
+        .\gclm_deploy.exe | Write-Host
+        if (Test-Path "C:\ProgramData\GrapeCity\gclm\gclm.exe") {
+          Write-Host "gclm.exe is present."
+        } else {
+          Write-Error "gclm.exe is NOT present!"
+          Get-ChildItem "C:\ProgramData\GrapeCity\gclm"
+        }
+        
     - name: gclm setting
       if: env.skip == 'false'
       env:
@@ -131,4 +143,5 @@ jobs:
     # 6. クリーンアップ
     - name: clean up
       if: always() && env.skip != 'true'
-      run: gclm "4327eaf8-aa02-40a6-b9f6-3d007c039055" -d
+      run: |
+        & "C:\ProgramData\GrapeCity\gclm\gclm.exe" 4327eaf8-aa02-40a6-b9f6-3d007c039055 -d
